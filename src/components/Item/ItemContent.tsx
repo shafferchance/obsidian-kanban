@@ -236,6 +236,7 @@ export const ItemContent = Preact.memo(function ItemContent({
     );
   }
 
+  console.log({ dom: item.data.dom });
   return (
     <div className={c('item-title')}>
       <MarkdownDomRenderer

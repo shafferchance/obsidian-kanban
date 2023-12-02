@@ -36,7 +36,7 @@ module.exports = {
     'react/no-unescaped-entities': 'off',
     'react/prop-types': 'off',
     'react/react-in-jsx-scope': 'off',
-    'linebreak-style': ['error', 'unix'],
+    // 'linebreak-style': ['error', 'unix'],
     indent: 'off',
     quotes: 'off',
   },

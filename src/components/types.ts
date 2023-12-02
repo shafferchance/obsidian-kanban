@@ -68,6 +68,10 @@ export interface ItemMetaData {
   file?: TFile | null;
   fileMetadata?: FileMetadata;
   fileMetadataOrder?: string[];
+  codeResult?: unknown;
+  codeType?: 'js' | 'dql';
+  // Might not need this
+  codeResultStr?: string;
 }
 
 export interface ItemData {

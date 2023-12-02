@@ -46,6 +46,7 @@ export function listItemToItemData(
   const hideTagsInTitle = stateManager.getSetting('hide-tags-in-title');
   const hideDateInTitle = stateManager.getSetting('hide-date-in-title');
 
+  // Since each "Card" is contained per paragraph element this marks the entire card to render
   const itemBoundary = getNodeContentBoundary(item.children[0] as Paragraph);
   let itemContent = getStringFromBoundary(md, itemBoundary);
 
@@ -57,6 +58,7 @@ export function listItemToItemData(
   let title = itemContent;
 
   const itemData: ItemData = {
+    // This is required to ensure everything is within the one paragraph element to Obsidian's MD parser/unist
     titleRaw: replaceBrs(itemContent),
     blockId: undefined,
     title: '',
@@ -66,6 +68,9 @@ export function listItemToItemData(
       date: undefined,
       time: undefined,
       timeStr: undefined,
+      codeResult: undefined,
+      codeResultStr: undefined,
+      codeType: undefined,
       tags: [],
       fileAccessor: undefined,
       file: undefined,
@@ -156,6 +161,17 @@ export function listItemToItemData(
         itemData.metadata.fileAccessor = (genericNode as FileNode).fileAccessor;
         return true;
       }
+
+      // The problem is suspected to be between renderer, so the hunch that will be attempted now is
+      // to remove the dataviewjs prefix from the md and prevent dataview js from running immediately
+      if (genericNode.type === 'inlineCode') {
+        // TODO: Make dataview word settable and validated to not be the same as the global dataview ones
+        itemData.metadata.codeType = genericNode.value.startsWith('query')
+          ? 'dql'
+          : 'js';
+        itemData.metadata.codeResultStr = (genericNode as ValueNode).value;
+        // Might need to do a range removal here as well
+      }
     }
   );
 
@@ -192,6 +208,7 @@ export function astToUnhydratedBoard(
   const archive: Item[] = [];
 
   root.children.forEach((child, index) => {
+    // When we're at a heading this is a "Lane"
     if (child.type === 'heading') {
       const isArchive = isArchiveLane(child, root.children, index);
       const headingBoundary = getNodeContentBoundary(child as Parent);
@@ -199,6 +216,7 @@ export function astToUnhydratedBoard(
 
       let shouldMarkItemsComplete = false;
 
+      // Here we're looking for cards in the current "Lane"
       const list = getNextOfType(root.children, index, 'list', (child) => {
         if (child.type === 'heading') return false;
 
@@ -342,6 +360,7 @@ export async function newItem(
 }
 
 export async function reparseBoard(stateManager: StateManager, board: Board) {
+  console.log('reparsing');
   try {
     return update(board, {
       children: {

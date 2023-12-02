@@ -28,23 +28,23 @@ export async function hydrateItem(stateManager: StateManager, item: Item) {
   let itemTitleDom: HTMLDivElement;
 
   try {
-    itemTitleDom = await renderMarkdown(
-      stateManager.getAView(),
-      item.data.title
-    );
+    const viewToRenderTo = stateManager.getAView();
+    itemTitleDom = await renderMarkdown(viewToRenderTo, item.data.title);
+    console.log(viewToRenderTo);
   } catch (e) {
     stateManager.setError(e);
     throw e;
   }
 
   item.data.dom = itemTitleDom;
+  console.log(item.data.dom);
   item.data.titleSearch = getSearchValue(
     itemTitleDom,
     item.data.metadata.tags,
     item.data.metadata.fileMetadata
   );
 
-  const { dateStr, timeStr, fileAccessor } = item.data.metadata;
+  const { dateStr, timeStr, fileAccessor, codeResultStr } = item.data.metadata;
 
   if (dateStr) {
     item.data.metadata.date = moment(
@@ -77,6 +77,63 @@ export async function hydrateItem(stateManager: StateManager, item: Item) {
 
     if (file) {
       item.data.metadata.file = file;
+    }
+  }
+
+  if (codeResultStr) {
+    if (!stateManager.app.plugins.enabledPlugins.has('dataview')) {
+      item.data.metadata.codeResult =
+        'Please install/enable dataview for this to work';
+      return item;
+    }
+
+    console.log(codeResultStr.startsWith('query'));
+    if (codeResultStr.startsWith('queryjs')) {
+      const splitCode = codeResultStr.split('<br>');
+      // Remove the first element that is langauge type
+      splitCode.shift();
+
+      if (splitCode[splitCode.length - 1] === '') {
+        // Remove empty last element
+        splitCode.pop();
+      }
+
+      if (splitCode.length === 1) {
+        item.data.metadata.codeResult = `Something went wrong parsing: ${codeResultStr}`;
+        return item;
+      }
+
+      /*
+      TABLE WITHOUT ID
+link(key, meta(key).subpath) AS Day,
+rows.Lists.text AS Content FROM #project/test
+FLATTEN file.lists AS Lists
+GROUP BY Lists.section"groupBy(l => l.section.subpath))
+      */
+
+      const currentView = stateManager.getAView();
+      const cleanCode = splitCode.join('\n');
+      // eslint-disable-next-line
+      // @ts-ignore
+      await stateManager.app.plugins.plugins.dataview?.dataviewjs(
+        cleanCode,
+        itemTitleDom,
+        currentView,
+        currentView.file.path
+      );
+    } else if (codeResultStr.startsWith('query')) {
+      const [, code] = codeResultStr.split('<br>');
+      if (!code) {
+        item.data.metadata.codeResult = `Something went wrong parsing dql: ${codeResultStr}`;
+        return item;
+      }
+
+      const cleanCode = code.replace('<br>', '\n');
+      const result = await stateManager.app.plugins.plugins.dataview.api[
+        'query'
+      ](cleanCode);
+      // TODO: Render to proper md and attach to dom
+      console.log(result);
     }
   }
 

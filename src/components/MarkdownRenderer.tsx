@@ -19,8 +19,10 @@ function appendOrReplaceFirstChild(
   if (!child || !wrapper) return;
 
   if (wrapper && !wrapper.firstChild) {
+    console.log('Appending');
     wrapper.appendChild(child);
   } else if (wrapper.firstChild && wrapper.firstChild !== child) {
+    console.log('Replacing');
     wrapper.replaceChild(child, wrapper.firstChild);
   }
 }
@@ -41,7 +43,6 @@ export const MarkdownRenderer = Preact.memo(function MarkdownRenderer({
       .then((el) => {
         contentRef.current = el;
         markRef.current = new Mark(el);
-
         if (wrapperRef.current) {
           appendOrReplaceFirstChild(wrapperRef.current, el);
         }
@@ -91,7 +92,7 @@ export const MarkdownDomRenderer = Preact.memo(function MarkdownDomRenderer({
   const { stateManager } = Preact.useContext(KanbanContext);
 
   const contentEl = Preact.useMemo(() => {
-    return dom ? (dom.cloneNode(true) as HTMLDivElement) : createDiv();
+    return dom ?? createDiv();
   }, [dom, stateManager]);
 
   const marker = Preact.useMemo(() => {
