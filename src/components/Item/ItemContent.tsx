@@ -192,7 +192,11 @@ export const ItemContent = Preact.memo(function ItemContent({
     (e: PointerEvent) => {
       const target = e.target as HTMLElement;
 
-      if (target.hasClass('task-list-item-checkbox')) {
+      if (
+        target.hasClass('task-list-item-checkbox') &&
+        // Since the markdown parser only sees a checkbox this is treated as a kanban one, which shouldn't be the case
+        !target.hasClass('dataview')
+      ) {
         if (target.dataset.src) {
           return checkEmbeddedCheckbox(target);
         }
